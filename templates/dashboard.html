@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<form action="{{ url_for('search_artists') }}"  id="search-query" method="post">
+  Playlist Name: <input type="text" name="playlist"><br>
+  Artist list (comma separated): <input type="text" name="artists"><br>
+  <input id="find-artists" type="submit" value="Submit">
+</form>
+
+<div id="search-results"></div>
+
+{% endblock %}
