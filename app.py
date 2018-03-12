@@ -97,7 +97,7 @@ def dashboard():
 # POST(playlist, artsts) -> Populate Playlist & Redirect dashboard
 # Receives a post request with playlist and artist data and creates the Spotify
 # playlist with all songs data
-@app.route("/makeplaylist", methods=['POST'])
+@app.route("/make-playlist", methods=['POST'])
 def make_playlist():
     if session.get('token') == False:
         return redirect(url_for('index'))
