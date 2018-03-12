@@ -12,12 +12,15 @@ import spotipy
 
 app = Flask(__name__)
 
+KEYS = open('client-secret.json').read()
+key_data = json.loads(KEYS)
+
 # set the secret key.  keep this really secret: for session usage
-app.secret_key = 'A0Zr98j/3yX R~XLH!jmN]LWX/,?RT'
+app.secret_key = key_data['FlaskKey']
 
 #  Client Keys
-CLIENT_ID = "15e56802b52f409cbc3aaca08b8d6c3a"
-CLIENT_SECRET = "04bb562eb48d4204894431d1f2210aa4"
+CLIENT_ID = key_data['ClientID']
+CLIENT_SECRET = key_data['ClientSecret']
 
 # Spotify URLS
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
