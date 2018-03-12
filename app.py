@@ -8,6 +8,7 @@ import sys
 import os
 import xml.etree.ElementTree as ET
 import plistlib
+import spotipy
 
 app = Flask(__name__)
 
