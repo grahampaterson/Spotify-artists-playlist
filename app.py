@@ -5,12 +5,24 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import json
 import requests
 from flask import Flask, redirect, request, session, url_for, jsonify
+from flask_sqlalchemy import SQLAlchemy
 
 # Init flask app
 app = Flask(__name__)
+# Config flask_sqlalchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+db = SQLAlchemy(app)
+
+# Configure Database
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_uri = db.Column(db.String(), unique=True, nullable=False)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
 
 # API KEYS
-KEYS = open('client-secret.json').read()
+KEYS = open('client-secret.json')
 key_data = json.loads(KEYS)
 # set the secret key.  keep this really secret: for session usage
 app.secret_key = key_data['FlaskKey']

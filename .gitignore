@@ -1,3 +1,4 @@
 env/
 client-secret.json
 .DS_Store
+__pycache__/
