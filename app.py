@@ -18,9 +18,40 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_uri = db.Column(db.String(), unique=True, nullable=False)
+    playlists = db.relationship('Playlist', backref='user', lazy=True)
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return '<Id: {}, Uri: {}>'.format(self.id, self.user_uri)
+
+class Playlist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    playlist_uri = db.Column(db.String(), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def __repr__(self):
+        return '<Id: {}, Uri: {}>'.format(self.id, self.playlist_uri)
+
+artist_playlist = db.Table('artist_plalist',
+db.Column('playlist_id', db.Integer, db.ForeignKey('playlist.id'), primary_key=True),
+db.Column('artist_id', db.Integer, db.ForeignKey('artist.id'), primary_key=True)
+)
+
+class Artist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    artist_uri = db.Column(db.String(), nullable=False)
+    songs = db.relationship('Songs', backref='artist', laze=True)
+
+    def __repr__(self):
+        return '<Id: {}, Uri: {}>'.format(self.id, self.artist_uri)
+
+class Song(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    song_uri = db.Column('db.String()', unique=True, nullable=False)
+    artist_id = db.column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
+
+    def __repr__(self):
+        return '<Id: {}, Uri: {}>'.format(self.id, self.song_uri)
+
 
 # API KEYS
 KEYS = open('client-secret.json')
@@ -46,8 +77,14 @@ def index():
 
 @app.route('/callback/q')
 def callback():
-    access_token = auth.get_access_token(request.args['code'])
-    session['token'] = access_token['access_token']
+    response_data = auth.get_access_token(request.args['code'])
+    print(response_data)
+    token_info = response_data
+    access_token = response_data['access_token']
+    refresh_token = response_data['refresh_token']
+
+    #add token to session
+    session['token'] = access_token
 
     return redirect(url_for('logged_in'))
 
