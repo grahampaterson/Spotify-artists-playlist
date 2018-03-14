@@ -1,3 +1,4 @@
+import os
 import sys
 import spotipy
 import spotipy.util as util
@@ -10,10 +11,10 @@ from flask_sqlalchemy import SQLAlchemy
 # Init flask app
 app = Flask(__name__)
 # Config flask_sqlalchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.sqlite'
 db = SQLAlchemy(app)
 
-# Configure Database
+# Configure Database Structure
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_uri = db.Column(db.String(), unique=True, nullable=False)
@@ -23,7 +24,7 @@ class User(db.Model):
 
 # API KEYS
 KEYS = open('client-secret.json')
-key_data = json.loads(KEYS)
+key_data = json.load(KEYS)
 # set the secret key.  keep this really secret: for session usage
 app.secret_key = key_data['FlaskKey']
 #  Spotify Client Keys
