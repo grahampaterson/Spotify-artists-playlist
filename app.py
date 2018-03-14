@@ -7,6 +7,7 @@ import json
 import requests
 from flask import Flask, redirect, request, session, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from helpers import log
 
 # Init flask app
 app = Flask(__name__)
@@ -74,6 +75,26 @@ def index():
     if session.get('token') == False:
         return redirect(auth.get_authorize_url())
 
+    # new_user = User(user_uri='user11')
+    # new_playlist = Playlist(playlist_uri='dddddggdgfgfgg', user=new_user)
+    # new_playlist2 = Playlist(playlist_uri='78gffgh5', user_id=11)
+    # db.session.add(new_playlist)
+    # db.session.add(new_playlist2)
+    # db.session.commit()
+
+    # query = User.query.filter_by(id=1).first().playlists[1].artists
+
+    # SUBSCRIPTIONS FLOW
+    # playlist = Playlist.query.filter_by(user_id=1).first().user.playlists[0]
+    # artist = Artist(artist_uri='556ghh7')
+    # print(playlist.artists)
+    # playlist.artists.append(artist)
+    # db.session.add(playlist)
+    # db.session.commit()
+
+    add_user('ddd')
+
+    return 'nothing'
     return redirect(url_for('logged_in'))
 
 @app.route('/callback/q')
@@ -99,6 +120,21 @@ def logged_in():
     # sp.user_playlist_create(sp.current_user()['id'], 'Spotipy')
     return jsonify(sp.current_user())
 
+# user_uri -> user
+# takes a user uri and adds the user to db, if user does not exist creates it
+# and returns user
+def add_user(user_uri):
+    query = User.query.filter_by(user_uri=user_uri).first()
+    # create new user flow
+    if query is None:
+        log("Couldn't find user: creating user")
+        new_user = User(user_uri=user_uri)
+        db.session.add(new_user)
+        db.session.commit()
+        log("New user created")
+        return new_user
+    log("User found")
+    return query
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
