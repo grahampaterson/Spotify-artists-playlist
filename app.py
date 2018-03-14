@@ -23,34 +23,35 @@ class User(db.Model):
     def __repr__(self):
         return '<Id: {}, Uri: {}>'.format(self.id, self.user_uri)
 
-class Playlist(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    playlist_uri = db.Column(db.String(), unique=True, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    def __repr__(self):
-        return '<Id: {}, Uri: {}>'.format(self.id, self.playlist_uri)
-
-artist_playlist = db.Table('artist_plalist',
+subscriptions = db.Table('subscriptions',
 db.Column('playlist_id', db.Integer, db.ForeignKey('playlist.id'), primary_key=True),
 db.Column('artist_id', db.Integer, db.ForeignKey('artist.id'), primary_key=True)
 )
 
+class Playlist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    playlist_uri = db.Column(db.String(), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    artists = db.relationship('Artist', secondary=subscriptions, lazy='subquery', backref=db.backref('playlists', lazy=True))
+
+    def __repr__(self):
+        return '<Id: {}, Uri: {}, UserID: {}>'.format(self.id, self.playlist_uri, self.user_id)
+
 class Artist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     artist_uri = db.Column(db.String(), nullable=False)
-    songs = db.relationship('Songs', backref='artist', laze=True)
+    songs = db.relationship('Song', backref='artist', lazy=True)
 
     def __repr__(self):
         return '<Id: {}, Uri: {}>'.format(self.id, self.artist_uri)
 
 class Song(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    song_uri = db.Column('db.String()', unique=True, nullable=False)
-    artist_id = db.column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
+    song_uri = db.Column(db.String(), unique=True, nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
 
     def __repr__(self):
-        return '<Id: {}, Uri: {}>'.format(self.id, self.song_uri)
+        return '<Id: {}, Uri: {}, ArtistID: {}>'.format(self.id, self.song_uri, self.artist_id)
 
 
 # API KEYS
