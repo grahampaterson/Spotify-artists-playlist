@@ -92,9 +92,6 @@ def index():
     # db.session.add(playlist)
     # db.session.commit()
 
-    add_user('ddd')
-
-    return 'nothing'
     return redirect(url_for('logged_in'))
 
 @app.route('/callback/q')
@@ -116,9 +113,14 @@ def logged_in():
         return redirect(auth.get_authorize_url())
 
     sp = spotipy.client.Spotify(session['token'], True, creds)
+    session['user_uri'] = sp.current_user()['uri']
+    current_user = add_user(session['user_uri'])
 
     # sp.user_playlist_create(sp.current_user()['id'], 'Spotipy')
     return jsonify(sp.current_user())
+
+
+# FUNCTIONS
 
 # user_uri -> user
 # takes a user uri and adds the user to db, if user does not exist creates it
@@ -127,14 +129,15 @@ def add_user(user_uri):
     query = User.query.filter_by(user_uri=user_uri).first()
     # create new user flow
     if query is None:
-        log("Couldn't find user: creating user")
+        log("Couldn't find user: Creating user")
         new_user = User(user_uri=user_uri)
         db.session.add(new_user)
         db.session.commit()
-        log("New user created")
+        log("New user created: Returning user")
         return new_user
-    log("User found")
+    log("User found: Returning User")
     return query
+
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
