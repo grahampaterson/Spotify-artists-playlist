@@ -40,7 +40,7 @@ class Playlist(db.Model):
 
 class Artist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    artist_uri = db.Column(db.String(), nullable=False)
+    artist_uri = db.Column(db.String(), unique=True, nullable=False)
     songs = db.relationship('Song', backref='artist', lazy=True)
 
     def __repr__(self):
@@ -91,6 +91,7 @@ def index():
     # playlist.artists.append(artist)
     # db.session.add(playlist)
     # db.session.commit()
+    return redirect(auth.get_authorize_url())
     return redirect(url_for('logged_in'))
 
 @app.route('/callback/q')
@@ -115,6 +116,9 @@ def logged_in():
     session['user_uri'] = sp.current_user()['uri']
     current_user = add_user(session['user_uri'])
 
+    new_artist = add_artist_to_db('pop')
+    artist_to_playlist_db('spotify:user:1163565663:playlist:2Rhsn3R1yhAVkX2c4zDli5', new_artist)
+
     # sp.user_playlist_create(sp.current_user()['id'], 'Spotipy')
     return jsonify(sp.current_user())
 
@@ -137,21 +141,6 @@ def add_user(user_uri):
     log("User found: Returning User")
     return query
 
-# playlist_uri, user -> playlist
-# TODO change to select playlist from existing playlists
-def add_playlist(playlist_uri, user):
-    query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
-    # create new playlist flow
-    if query is None:
-        log("Couldn't find playlist: Creating playlist")
-        new_playlist = Playlist(playlist_uri=playlist_uri, user=user)
-        db.session.add(new_playlist)
-        db.session.commit()
-        log("New playlist created: Returning playlist")
-        return new_playlist
-    log("User found: Returning playlist")
-    return query
-
 # playlist_name, user -> playlist database entry
 # creates a new playlist in database associated with user and with name
 def create_new_playlist(playlist_name, user):
@@ -165,6 +154,37 @@ def create_new_playlist(playlist_name, user):
     log("Returning Database Playlist Entry")
     return playlist_to_db
 
+# artist_uri -> artist
+# Takes and artist uri and adds it to the database if it doesn't exist and returns
+# the artist
+def add_artist_to_db(artist_uri):
+    query = Artist.query.filter_by(artist_uri=artist_uri).first()
+    # create new user flow
+    if query is None:
+        log("Couldn't find artist: Creating artist")
+        new_artist = Artist(artist_uri=artist_uri)
+        db.session.add(new_artist)
+        db.session.commit()
+        log("New artist created: Returning artist")
+        return new_artist
+    log("Artist found: Returning artist")
+    return query
+
+# playlist_uri, artist -> adds artists to playlist on Spotify
+# TODO
+def artist_to_playlist_spotify(playlist_uri, artist):
+    return False
+
+# playlist_uri, artist -> playlist
+# Takes an playlist_uri and artist and returns the playlist with the artist added
+def artist_to_playlist_db(playlist_uri, artist):
+    print(artist.artist_uri)
+    # SUBSCRIPTIONS FLOW
+    playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    new_artist = Artist(artist_uri=artist.artist_uri)
+    playlist.artists.append(new_artist)
+    db.session.add(playlist)
+    db.session.commit()
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
