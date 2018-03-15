@@ -75,22 +75,6 @@ def index():
     if session.get('token') == False:
         return redirect(auth.get_authorize_url())
 
-    # new_user = User(user_uri='user11')
-    # new_playlist = Playlist(playlist_uri='dddddggdgfgfgg', user=new_user)
-    # new_playlist2 = Playlist(playlist_uri='78gffgh5', user_id=11)
-    # db.session.add(new_playlist)
-    # db.session.add(new_playlist2)
-    # db.session.commit()
-
-    # query = User.query.filter_by(id=1).first().playlists[1].artists
-
-    # SUBSCRIPTIONS FLOW
-    # playlist = Playlist.query.filter_by(user_id=1).first().user.playlists[0]
-    # artist = Artist(artist_uri='556ghh7')
-    # print(playlist.artists)
-    # playlist.artists.append(artist)
-    # db.session.add(playlist)
-    # db.session.commit()
     return redirect(url_for('logged_in'))
 
 @app.route('/auth')
@@ -128,8 +112,12 @@ def logged_in():
     # new_artist = add_artist_to_db(search_results[2]['uri'])
     # new_playlist = create_new_playlist('Spotipy', current_user)
     # artist_to_playlist_db(new_playlist.playlist_uri, new_artist)
-    spotify_playlist = new_spotify_playlist('Spotipy2')
-    add_playlist_to_db(spotify_playlist, current_user)
+
+    # spotify_playlist = new_spotify_playlist('Spotipy2')
+    # add_playlist_to_db(spotify_playlist, current_user)
+
+    print(get_artist_albums('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
+
     return jsonify(sp.current_user())
 
 
@@ -220,6 +208,19 @@ def subscribe_artist(playlist_uri, artist):
     playlist.artists.append(new_artist)
     db.session.add(playlist)
     db.session.commit()
+
+# artist_uri -> list_of_artist_albums
+# takes an artist uri and returns all the artist's albums as a list
+def get_artist_albums(artist_uri):
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+    offset = 0
+    response = sp.artist_albums(artist_uri, album_type='album', offset=offset)
+    artist_albums = response['items']
+    while response['next'] is not None:
+        offset = offset + 20
+        response = sp.artist_albums(artist_uri, offset=offset)
+        artist_albums.append(response['items'])
+    return artist_albums
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
