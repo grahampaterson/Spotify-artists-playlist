@@ -116,9 +116,10 @@ def logged_in():
         return redirect(auth.get_authorize_url())
 
     sp = spotipy.client.Spotify(session['token'], True, creds)
-    session['user_uri'] = sp.current_user()['uri']
-    session['user_id'] = sp.current_user()['id']
-    current_user = add_user(session['user_uri'])
+    user_data = sp.current_user()
+    session['user_uri'] = user_data['uri']
+    session['user_id'] = user_data['id']
+    current_user = add_user(session['user_uri']) # Database User Object
 
     # new_artist = add_artist_to_db('pop')
     # artist_to_playlist_db('spotify:user:1163565663:playlist:2Rhsn3R1yhAVkX2c4zDli5', new_artist)
@@ -134,7 +135,7 @@ def logged_in():
 
 # FUNCTIONS
 
-# user_uri -> user
+# user_uri -> user_db
 # takes a user uri and adds the user to db, if user does not exist creates it
 # and returns user
 def add_user(user_uri):
@@ -171,7 +172,7 @@ def new_spotify_playlist(playlist_name):
     new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
     return new_playlist['uri']
 
-# playlist_uri, user -> playlist_database_entry
+# playlist_uri, user -> playlist_db
 # take a playlist uri and adds it to dataabse associated to user
 def add_playlist_to_db(playlist_uri, user):
     query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
@@ -185,7 +186,6 @@ def add_playlist_to_db(playlist_uri, user):
     log("Found existing playlist with ID in database")
     return query
 
-
 # search_query -> listof_search_results
 # takes a search query and returns a list of results
 def search_artist(search):
@@ -194,7 +194,7 @@ def search_artist(search):
 
     return search_results['artists']['items']
 
-# artist_uri -> artist
+# artist_uri -> artist_db
 # Takes and artist uri and adds it to the database if it doesn't exist and returns
 # the artist
 def add_artist_to_db(artist_uri):
@@ -210,9 +210,9 @@ def add_artist_to_db(artist_uri):
     log("Artist found: Returning artist")
     return query
 
-# playlist_uri, artist -> playlist
-# Takes an playlist_uri and artist and returns the playlist with the artist added
-def artist_to_playlist_db(playlist_uri, artist):
+# playlist_uri, artist -> playlist_db
+# Takes an playlist_uri and artist subscribes artist to playlist. Returns playlist
+def subscribe_artist(playlist_uri, artist):
     print(artist.artist_uri)
     # SUBSCRIPTIONS FLOW
     playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
