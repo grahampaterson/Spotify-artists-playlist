@@ -166,7 +166,5 @@ def create_new_playlist(playlist_name, user):
     return playlist_to_db
 
 
-
-
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
