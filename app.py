@@ -117,7 +117,11 @@ def logged_in():
     # add_playlist_to_db(spotify_playlist, current_user)
 
     # print(get_artist_albums('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
-    print(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'))
+    # print(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'))
+    # add_songs(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'), add_artist_to_db('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
+
+    # make_playlist('Spotipy2', current_user)
+    subscribe_artist(make_playlist('Spotipy2', current_user), add_artist_to_db('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
 
     return jsonify(sp.current_user())
 
@@ -174,6 +178,12 @@ def add_playlist_to_db(playlist_uri, user):
         return playlist_to_db
     log("Found existing playlist with ID in database")
     return query
+
+# playlist_name, user -> playlist_uri
+def make_playlist(playlist_name, user):
+    playlist = new_spotify_playlist(playlist_name)
+    add_playlist = add_playlist_to_db(playlist, user)
+    return playlist
 
 # search_query -> listof_search_results
 # takes a search query and returns a list of results
@@ -235,6 +245,17 @@ def get_album_songs(album_uri):
         response = sp.album_tracks(album_uri, offset=offset)
         album_songs.append(response['items'])
     return list(map(lambda x: x['uri'], album_songs))
+
+# list_of_tracks, artist -> song_db
+# takes a list of tracks and adds them to the db
+def add_songs(songs, artist):
+    for song in songs:
+        new_song = Song(song_uri=song, artist=artist)
+        db.session.add(new_song)
+        try:
+            db.session.commit()
+        except:
+            pass
 
 
 
