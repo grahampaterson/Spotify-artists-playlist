@@ -116,7 +116,8 @@ def logged_in():
     # spotify_playlist = new_spotify_playlist('Spotipy2')
     # add_playlist_to_db(spotify_playlist, current_user)
 
-    print(get_artist_albums('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
+    # print(get_artist_albums('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
+    print(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'))
 
     return jsonify(sp.current_user())
 
@@ -209,18 +210,33 @@ def subscribe_artist(playlist_uri, artist):
     db.session.add(playlist)
     db.session.commit()
 
-# artist_uri -> list_of_artist_albums
+# artist_uri -> list_of_artist_album_uris
 # takes an artist uri and returns all the artist's albums as a list
 def get_artist_albums(artist_uri):
     sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
-    response = sp.artist_albums(artist_uri, album_type='album', offset=offset)
+    response = sp.artist_albums(artist_uri, offset=offset)
     artist_albums = response['items']
     while response['next'] is not None:
         offset = offset + 20
         response = sp.artist_albums(artist_uri, offset=offset)
         artist_albums.append(response['items'])
-    return artist_albums
+    return list(map(lambda x: x['uri'], artist_albums))
+
+# album_uri -> list_of_song_uris
+# takes an album uri and returns all of the album's songs uris as a list
+def get_album_songs(album_uri):
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+    offset = 0
+    response = sp.album_tracks(album_uri, offset=offset)
+    album_songs = response['items']
+    while response['next'] is not None:
+        offset = offset + 50
+        response = sp.album_tracks(album_uri, offset=offset)
+        album_songs.append(response['items'])
+    return list(map(lambda x: x['uri'], album_songs))
+
+
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
