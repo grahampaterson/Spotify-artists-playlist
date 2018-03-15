@@ -3,4 +3,6 @@ client-secret.json
 .DS_Store
 __pycache__/
 database.sqlite
+<<<<<<< HEAD
 .DS_Store
+=======
