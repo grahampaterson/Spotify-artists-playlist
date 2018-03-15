@@ -91,7 +91,6 @@ def index():
     # playlist.artists.append(artist)
     # db.session.add(playlist)
     # db.session.commit()
-
     return redirect(url_for('logged_in'))
 
 @app.route('/callback/q')
@@ -137,6 +136,36 @@ def add_user(user_uri):
         return new_user
     log("User found: Returning User")
     return query
+
+# playlist_uri, user -> playlist
+# TODO change to select playlist from existing playlists
+def add_playlist(playlist_uri, user):
+    query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    # create new playlist flow
+    if query is None:
+        log("Couldn't find playlist: Creating playlist")
+        new_playlist = Playlist(playlist_uri=playlist_uri, user=user)
+        db.session.add(new_playlist)
+        db.session.commit()
+        log("New playlist created: Returning playlist")
+        return new_playlist
+    log("User found: Returning playlist")
+    return query
+
+# playlist_name, user -> playlist database entry
+# creates a new playlist in database associated with user and with name
+def create_new_playlist(playlist_name, user):
+    log("Creating playlist on Spotify")
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+    new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
+    log("Adding Playlist to Database")
+    playlist_to_db = Playlist(playlist_uri=new_playlist['uri'], user=user)
+    db.session.add(playlist_to_db)
+    db.session.commit()
+    log("Returning Database Playlist Entry")
+    return playlist_to_db
+
+
 
 
 if __name__ == "__main__":
