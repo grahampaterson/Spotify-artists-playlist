@@ -91,8 +91,11 @@ def index():
     # playlist.artists.append(artist)
     # db.session.add(playlist)
     # db.session.commit()
-    return redirect(auth.get_authorize_url())
     return redirect(url_for('logged_in'))
+
+@app.route('/auth')
+def reauth():
+    return redirect(auth.get_authorize_url())
 
 @app.route('/callback/q')
 def callback():
@@ -124,7 +127,8 @@ def logged_in():
     # new_artist = add_artist_to_db(search_results[2]['uri'])
     # new_playlist = create_new_playlist('Spotipy', current_user)
     # artist_to_playlist_db(new_playlist.playlist_uri, new_artist)
-    new_playlist('Test')
+    spotify_playlist = new_spotify_playlist('Spotipy2')
+    add_playlist_to_db(spotify_playlist, current_user)
     return jsonify(sp.current_user())
 
 
@@ -148,25 +152,38 @@ def add_user(user_uri):
 
 # playlist_name -> playlist_uri
 # takes a playlist name and creates it on spotify or returns the URI if it already exists
-def new_playlist(playlist_name):
+def new_spotify_playlist(playlist_name):
+    log("Searching for playlist {}".format(playlist_name))
     sp = spotipy.client.Spotify(session['token'], True, creds)
-    print(session['user_id'])
-    print(sp.user_playlists(session['user_id']))
-
-
-# playlist_name, user -> playlist database entry
-# creates a new playlist in database associated with user and with name
-# TODO make this just add playlist to database
-def create_new_playlist(playlist_name, user):
+    offset = 0
+    playlists = sp.user_playlists(session['user_id'], offset=offset)
+    has_next = True
+    while (has_next is not None):
+        for playlist in playlists['items']:
+            if playlist['name'] == playlist_name:
+                log("Found playlist {} in your spotify".format(playlist_name))
+                return playlist['uri']
+        has_next = playlists['next']
+        offset = offset + 50
+        playlists = sp.user_playlists(session['user_id'], offset=offset)
+    log("Couldn't find playlist with this name")
     log("Creating playlist on Spotify")
-    sp = spotipy.client.Spotify(session['token'], True, creds)
     new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
-    log("Adding Playlist to Database")
-    playlist_to_db = Playlist(playlist_uri=new_playlist['uri'], user=user)
-    db.session.add(playlist_to_db)
-    db.session.commit()
-    log("Returning Database Playlist Entry")
-    return playlist_to_db
+    return new_playlist['uri']
+
+# playlist_uri, user -> playlist_database_entry
+# take a playlist uri and adds it to dataabse associated to user
+def add_playlist_to_db(playlist_uri, user):
+    query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    if query is None:
+        log("Adding Playlist to Database")
+        playlist_to_db = Playlist(playlist_uri=playlist_uri, user=user)
+        db.session.add(playlist_to_db)
+        db.session.commit()
+        log("Returning Database Playlist Entry")
+        return playlist_to_db
+    log("Found existing playlist with ID in database")
+    return query
 
 
 # search_query -> listof_search_results
@@ -176,7 +193,6 @@ def search_artist(search):
     search_results = sp.search(search, type='artist')
 
     return search_results['artists']['items']
-
 
 # artist_uri -> artist
 # Takes and artist uri and adds it to the database if it doesn't exist and returns
