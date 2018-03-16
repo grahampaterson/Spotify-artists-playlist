@@ -319,7 +319,7 @@ def songs_to_playlist_uri(playlist_uri):
     sp = spotipy.client.Spotify(session['token'], True, creds)
     for i in range(0, len(new_tracks), 100):
         sp.user_playlist_add_tracks(user, playlist_uri, new_tracks[i:i+100])
-    log("015c: Done adding all songs for playlist {} to spotify".format(playlist_name))
+    log("015c: Done adding all songs for playlist {} to spotify".format(playlist_uri))
     return playlist_uri
 
 
