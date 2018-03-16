@@ -294,12 +294,20 @@ def artist_songs_flow(artist_uri):
 
 
 # Playlist_name -> playlist_uri
-# Takes a playlist and gets all the songs assoiciated with it and adds them to
-# spotify if they aren't already in the playlist
-def songs_to_playlist(playlist_name):
+# Takes a playlist name and gets all the songs assoiciated with it and adds them to
+# spotify if they aren't already in the playlist. Creates playlist if it doesn't exist
+def songs_to_playlist_name(playlist_name):
     log("013o: Adding all songs for playlist {} to spotify".format(playlist_name))
-    user = session['user_id']
     playlist_uri = make_playlist(playlist_name)
+    log("013c: Done adding all songs for playlist {} to spotify".format(playlist_name))
+    return songs_to_playlist_uri(playlist_uri)
+
+# Playlist_ -> playlist_uri
+# Takes a playlist_uri and gets all the songs assoiciated with it and adds them to
+# spotify if they aren't already in the playlist
+def songs_to_playlist_uri(playlist_uri):
+    log("015o: Adding all songs for playlist {} to spotify".format(playlist_uri))
+    user = session['user_id']
     playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
     tracks = []
 
@@ -311,8 +319,9 @@ def songs_to_playlist(playlist_name):
     sp = spotipy.client.Spotify(session['token'], True, creds)
     for i in range(0, len(new_tracks), 100):
         sp.user_playlist_add_tracks(user, playlist_uri, new_tracks[i:i+100])
-    log("013c: Done adding all songs for playlist {} to spotify".format(playlist_name))
+    log("015c: Done adding all songs for playlist {} to spotify".format(playlist_name))
     return playlist_uri
+
 
 # list_of_song_uris, list_of_song_uris -> list_of_song_uris
 # takes a list of existing songs and songs and retunrs a list of songs minus
@@ -344,7 +353,7 @@ def get_playlist_songs(playlist_uri):
 def artist_playlist_flow(playlist_name, artist_uri):
     log("014o: Starting full flow to add artist to playlist")
     playlist = sub_flow(playlist_name, artist_uri)
-    songs_to_playlist(playlist_name)
+    songs_to_playlist_name(playlist_name)
     log("014c: Done full flow to add artist to playlist")
     return playlist.playlist_uri
 
