@@ -105,7 +105,7 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
-    artist_playlist_flow('Testing', 'spotify:artist:3Wgzkj0XxWohyGor7w8Wdv')
+    artist_playlist_flow('Testing', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
 
     return jsonify(user_data)
 
@@ -249,11 +249,6 @@ def get_artist_albums(artist_uri):
 # takes an album uri and returns all of the album's songs uris from spotify  as a list
 def get_album_songs(album_uri):
     log("010o: Getting all songs belonging to: {}".format(album_uri))
-    # check if album is already in db and if it is doesn't get new tracks
-    query = Song.query.filter_by(album_uri=album_uri).first()
-    if query is not None:
-        log("010c: Album is already in database, skipping")
-        return []
     sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     response = sp.album_tracks(album_uri, offset=offset)
@@ -287,6 +282,11 @@ def artist_songs_flow(artist_uri):
     artist = add_artist_to_db(artist_uri)
     all_albums = get_artist_albums(artist_uri)
     for album_uri in all_albums:
+        # check if album is already in db and if it is doesn't get new tracks
+        query = Song.query.filter_by(album_uri=album_uri).first()
+        if query is not None:
+            log("Album is already in database, skipping")
+            continue
         album_songs = get_album_songs(album_uri)
         add_songs(album_songs, album_uri, artist)
     log("012c: Done adding all artist {} songs to database".format(artist_uri))
@@ -307,11 +307,10 @@ def songs_to_playlist(playlist_name):
         for song in artist.songs:
             tracks.append(song.song_uri)
 
-    filter_songs(get_playlist_songs(playlist_uri), tracks)
+    new_tracks = filter_songs(get_playlist_songs(playlist_uri), tracks)
     sp = spotipy.client.Spotify(session['token'], True, creds)
-    sp.user_playlist_replace_tracks(user, playlist_uri, tracks[0:99])
-    for i in range(100, len(tracks), 100):
-        sp.user_playlist_add_tracks(user, playlist_uri, tracks[i:i+100])
+    for i in range(0, len(new_tracks), 100):
+        sp.user_playlist_add_tracks(user, playlist_uri, new_tracks[i:i+100])
     log("013c: Done adding all songs for playlist {} to spotify".format(playlist_name))
     return playlist_uri
 
