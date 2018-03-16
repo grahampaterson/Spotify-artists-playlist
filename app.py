@@ -105,9 +105,10 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
-    # artist_playlist_flow('Spotipy', 'spotify:artist:2D4FOOOtWycb3Aw9nY5n3c')
+    # artist_playlist_flow('Testing', 'spotify:artist:2D4FOOOtWycb3Aw9nY5n3c')
     # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
-    update_all_playlists(session['user_uri'])
+    # update_all_playlists(session['user_uri'])
+    delete_playlist('spotify:user:1163565663:playlist:71GS9Yr0MxkEhg58QSNbjl')
 
     return jsonify(user_data)
 
@@ -378,6 +379,14 @@ def artist_playlist_flow(playlist_name, artist_uri):
     log("014c: Done full flow to add artist to playlist")
     return playlist.playlist_uri
 
+# playlist_uri -> Playlist_uri
+# takes a playlist uri and deletes all it's subscriptions. this does not delete
+# the playlist, artist, or it's songs. It simply removes the relationship
+def delete_playlist(playlist_uri):
+    playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    playlist.artists = []
+    db.session.commit()
+    return playlist_uri
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
