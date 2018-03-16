@@ -104,7 +104,7 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
     # current_user = add_user(session['user_uri']) # Database User Object
-    
+
 
     sub_flow('Spotipy2', 'spotify:artist:2nnbJlskqUuJcGLE4a9nIu')
 
@@ -150,10 +150,9 @@ def new_spotify_playlist(playlist_name):
     new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
     return new_playlist['uri']
 
-# playlist_uri -> playlist_db
+# playlist_uri, user_db -> playlist_db
 # take a playlist uri and adds it to dataabse associated to user
-def add_playlist_to_db(playlist_uri):
-    user = add_user(session['user_uri'])
+def add_playlist_to_db(playlist_uri, user):
     log("Trying to add playlist {} to database".format(playlist_uri))
     query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
     if query is None:
@@ -173,7 +172,7 @@ def make_playlist(playlist_name):
     user = add_user(session['user_uri'])
     log("Creating playlist {}".format(playlist_name))
     playlist = new_spotify_playlist(playlist_name)
-    add_playlist = add_playlist_to_db(playlist)
+    add_playlist = add_playlist_to_db(playlist, user)
     log("Done creating playlist {}, ".format(playlist_name, playlist))
     return playlist
 
@@ -223,9 +222,11 @@ def subscribe_artist(playlist_uri, artist):
 # takes a playlist name, a user and a artist uri and creates the subscription on the db
 # returns the playlist
 def sub_flow(playlist_name, artist_uri):
+    log("Starting Sub flow")
     playlist_uri = make_playlist(playlist_name)
     artist = artist_songs_flow(artist_uri)
     new_sub = subscribe_artist(playlist_uri, artist)
+    log("Sub flow completed")
     return new_sub
 
 
