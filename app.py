@@ -103,23 +103,8 @@ def logged_in():
     user_data = sp.current_user()
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
-    current_user = add_user(session['user_uri']) # Database User Object
-
-    # new_artist = add_artist_to_db('pop')
-    # artist_to_playlist_db('spotify:user:1163565663:playlist:2Rhsn3R1yhAVkX2c4zDli5', new_artist)
-
-    # search_results = search_artist('justin')
-    # new_artist = add_artist_to_db(search_results[2]['uri'])
-    # new_playlist = create_new_playlist('Spotipy', current_user)
-    # artist_to_playlist_db(new_playlist.playlist_uri, new_artist)
-
-    # spotify_playlist = new_spotify_playlist('Spotipy2')
-    # add_playlist_to_db(spotify_playlist, current_user)
-
-    # print(get_artist_albums('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
-    # print(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'))
-    # add_songs(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'), add_artist_to_db('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
-
+    # current_user = add_user(session['user_uri']) # Database User Object
+    
 
     sub_flow('Spotipy2', 'spotify:artist:2nnbJlskqUuJcGLE4a9nIu')
 
