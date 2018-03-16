@@ -120,11 +120,8 @@ def logged_in():
     # print(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'))
     # add_songs(get_album_songs('spotify:album:57uGBzqdUGPAawFu51YoGk'), add_artist_to_db('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
 
-    # make_playlist('Spotipy2', current_user)
-    # subscribe_artist(make_playlist('Spotipy2', current_user), add_artist_to_db('spotify:artist:4S2yOnmsWW97dT87yVoaSZ'))
-    # sub_flow('Spotipy2', current_user, 'spotify:artist:3Wgzkj0XxWohyGor7w8Wdv')
-    artist_songs_flow('spotify:artist:3Wgzkj0XxWohyGor7w8Wdv')
-    artist_songs_flow('spotify:artist:4qUFkkArfii3qNG8TnbPfc')
+
+    sub_flow('Spotipy2', 'spotify:artist:2nnbJlskqUuJcGLE4a9nIu')
 
     return jsonify(user_data)
 
@@ -135,6 +132,7 @@ def logged_in():
 # takes a user uri and adds the user to db, if user does not exist creates it
 # and returns user
 def add_user(user_uri):
+    log('Trying to add user {}'.format(user_uri))
     query = User.query.filter_by(user_uri=user_uri).first()
     # create new user flow
     if query is None:
@@ -150,7 +148,7 @@ def add_user(user_uri):
 # playlist_name -> playlist_uri
 # takes a playlist name and creates it on spotify or returns the URI if it already exists
 def new_spotify_playlist(playlist_name):
-    log("Searching for playlist {}".format(playlist_name))
+    log("Searching for playlist {} on spotify".format(playlist_name))
     sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     playlists = sp.user_playlists(session['user_id'], offset=offset)
@@ -163,80 +161,93 @@ def new_spotify_playlist(playlist_name):
         has_next = playlists['next']
         offset = offset + 50
         playlists = sp.user_playlists(session['user_id'], offset=offset)
-    log("Couldn't find playlist with this name")
-    log("Creating playlist on Spotify")
+    log("Couldn't find playlist, Creating playlist {} on Spotify".format(playlist_name))
     new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
     return new_playlist['uri']
 
-# playlist_uri, user -> playlist_db
+# playlist_uri -> playlist_db
 # take a playlist uri and adds it to dataabse associated to user
-def add_playlist_to_db(playlist_uri, user):
+def add_playlist_to_db(playlist_uri):
+    user = add_user(session['user_uri'])
+    log("Trying to add playlist {} to database".format(playlist_uri))
     query = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
     if query is None:
-        log("Adding Playlist to Database")
+        log("Playlist not in database, adding")
         playlist_to_db = Playlist(playlist_uri=playlist_uri, user=user)
         db.session.add(playlist_to_db)
         db.session.commit()
         log("Returning Database Playlist Entry")
         return playlist_to_db
-    log("Found existing playlist with ID in database")
+    log("Playlist already in database, returning playlist")
     return query
 
-# playlist_name, user -> playlist_uri
+# playlist_name -> playlist_uri
 # takes a playlist name and a user, adds playlist to user in database and returns uri for
 # playlist on spotify
-def make_playlist(playlist_name, user):
+def make_playlist(playlist_name):
+    user = add_user(session['user_uri'])
+    log("Creating playlist {}".format(playlist_name))
     playlist = new_spotify_playlist(playlist_name)
-    add_playlist = add_playlist_to_db(playlist, user)
+    add_playlist = add_playlist_to_db(playlist)
+    log("Done creating playlist {}, ".format(playlist_name, playlist))
     return playlist
 
 # search_query -> listof_search_results
 # takes a search query and returns a list of results
 def search_artist(search):
+    log("Searching for artist {}".format(artist))
     sp = spotipy.client.Spotify(session['token'], True, creds)
     search_results = sp.search(search, type='artist')
-
+    log("Returning search results")
     return search_results['artists']['items']
 
 # artist_uri -> artist_db
 # Takes and artist uri and adds it to the database, creates it if it doesn't exist,
-#  and returns the artist db object
+# and returns the artist db object
 def add_artist_to_db(artist_uri):
+    log("Adding artist {} to database".format(artist_uri))
     query = Artist.query.filter_by(artist_uri=artist_uri).first()
     # create new user flow
     if query is None:
-        log("Couldn't find artist: Creating artist")
+        log("Couldn't find artist in database: Creating artist")
         new_artist = Artist(artist_uri=artist_uri)
         db.session.add(new_artist)
         db.session.commit()
         log("New artist created: Returning artist")
         return new_artist
-    log("Artist found: Returning artist")
+    log("Artist found in database: Returning artist")
     return query
 
 # playlist_uri, artist_db -> playlist_db
 # Takes an playlist_uri and artist subscribes artist to playlist. Returns playlist
 def subscribe_artist(playlist_uri, artist):
-    print(artist.artist_uri)
+    log("Subscribing artist {} to playlist {}".format(artist.artist_uri, playlist_uri))
     # SUBSCRIPTIONS FLOW
-    # TODO if playlist can't be found fail
     playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
-    new_artist = add_artist_to_db(artist.artist_uri)
-    playlist.artists.append(new_artist)
+    if playlist is None:
+        log("Playlist didnt exist in database, creating it")
+        playlist = make_playlist("Untitled", add_user(session['user_uri']))
+    # new_artist = add_artist_to_db(artist.artist_uri)
+    playlist.artists.append(artist)
     db.session.add(playlist)
     db.session.commit()
+    log("Done subscribing artist {} to playlist {}".format(artist.artist_uri, playlist.playlist_uri))
     return playlist
 
-# playlist_name, user, artist_uri -> playlist_db
+# playlist_name, artist_uri -> playlist_db
 # takes a playlist name, a user and a artist uri and creates the subscription on the db
 # returns the playlist
-def sub_flow(playlist_name, user, artist_uri):
-    new_sub = subscribe_artist(make_playlist(playlist_name, user), add_artist_to_db(artist_uri))
+def sub_flow(playlist_name, artist_uri):
+    playlist_uri = make_playlist(playlist_name)
+    artist = artist_songs_flow(artist_uri)
+    new_sub = subscribe_artist(playlist_uri, artist)
     return new_sub
+
 
 # artist_uri -> list_of_artist_album_uris
 # takes an artist uri and returns all the artist's albums from spotify as a list
 def get_artist_albums(artist_uri):
+    log("Getting all albums belonging to: {}".format(artist_uri))
     sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     response = sp.artist_albums(artist_uri, offset=offset)
@@ -245,11 +256,13 @@ def get_artist_albums(artist_uri):
         offset = offset + 20
         response = sp.artist_albums(artist_uri, offset=offset)
         artist_albums.append(response['items'])
+    log("Got all albums belonging to: {}".format(artist_uri))
     return list(map(lambda x: x['uri'], artist_albums))
 
 # album_uri -> list_of_song_uris
 # takes an album uri and returns all of the album's songs uris from spotify  as a list
 def get_album_songs(album_uri):
+    log("Getting all songs belonging to: {}".format(album_uri))
     sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     response = sp.album_tracks(album_uri, offset=offset)
@@ -258,11 +271,13 @@ def get_album_songs(album_uri):
         offset = offset + 50
         response = sp.album_tracks(album_uri, offset=offset)
         album_songs.append(response['items'])
+    log("Got all songs belonging to: {}".format(album_uri))
     return list(map(lambda x: x['uri'], album_songs))
 
 # list_of_tracks, artist -> song_db
 # takes a list of tracks and adds them to the db
 def add_songs(songs, artist):
+    log("Addings all songs to artist {}".format(artist))
     for song in songs:
         new_song = Song(song_uri=song, artist=artist)
         db.session.add(new_song)
@@ -270,16 +285,19 @@ def add_songs(songs, artist):
             db.session.commit()
         except:
             db.session.rollback()
+    log("Done adding songs to database")
 
 # arist_uri -> artist_db
 # takes an artist uri, gets all their songs and adds them to the database. Returns
 # artist db object
 def artist_songs_flow(artist_uri):
+    log("Adding all artist {} songs to database".format(artist_uri))
     artist = add_artist_to_db(artist_uri)
     all_albums = get_artist_albums(artist_uri)
     for album in all_albums:
         album_songs = get_album_songs(album)
         add_songs(album_songs, artist)
+    log("Done adding all artist {} songs to database".format(artist_uri))
     return artist
 
 if __name__ == "__main__":
