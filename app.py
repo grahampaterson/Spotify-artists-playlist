@@ -105,7 +105,9 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
-    artist_playlist_flow('Testing', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
+    # artist_playlist_flow('Spotipy', 'spotify:artist:2D4FOOOtWycb3Aw9nY5n3c')
+    # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
+    update_all_playlists(session['user_uri'])
 
     return jsonify(user_data)
 
@@ -302,7 +304,7 @@ def songs_to_playlist_name(playlist_name):
     log("013c: Done adding all songs for playlist {} to spotify".format(playlist_name))
     return songs_to_playlist_uri(playlist_uri)
 
-# Playlist_ -> playlist_uri
+# Playlist_uri -> playlist_uri
 # Takes a playlist_uri and gets all the songs assoiciated with it and adds them to
 # spotify if they aren't already in the playlist
 def songs_to_playlist_uri(playlist_uri):
@@ -317,11 +319,30 @@ def songs_to_playlist_uri(playlist_uri):
 
     new_tracks = filter_songs(get_playlist_songs(playlist_uri), tracks)
     sp = spotipy.client.Spotify(session['token'], True, creds)
+    # TODO check if user has playlist with this uri, if not just skip it and delete from db maybe
     for i in range(0, len(new_tracks), 100):
         sp.user_playlist_add_tracks(user, playlist_uri, new_tracks[i:i+100])
     log("015c: Done adding all songs for playlist {} to spotify".format(playlist_uri))
     return playlist_uri
 
+# Playlist_uri -> playlist_uri
+# takes a playlist uri, finds every artist subscribed and updates their data in the
+# the database and then updates each of the playlists
+# ASSUME playlist_uri exists in database and belongs to current user
+def update_playlist(playlist_uri):
+    playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    for artist in playlist.artists:
+        artist_songs_flow(artist.artist_uri)
+    songs_to_playlist_uri(playlist_uri)
+    return playlist_uri
+
+# user_uri -> user_uri
+# takes a user_uri and updates all their playlists to be up to date
+def update_all_playlists(user_uri):
+    user = add_user(user_uri)
+    for playlist in user.playlists:
+        update_playlist(playlist.playlist_uri)
+    return user_uri
 
 # list_of_song_uris, list_of_song_uris -> list_of_song_uris
 # takes a list of existing songs and songs and retunrs a list of songs minus
