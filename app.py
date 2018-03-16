@@ -103,10 +103,9 @@ def logged_in():
     user_data = sp.current_user()
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
-    # current_user = add_user(session['user_uri']) # Database User Object
 
-
-    sub_flow('Spotipy2', 'spotify:artist:2nnbJlskqUuJcGLE4a9nIu')
+    # sub_flow('Spotipy2', 'spotify:artist:2nnbJlskqUuJcGLE4a9nIu')
+    songs_to_playlist("Spotipy2")
 
     return jsonify(user_data)
 
@@ -285,6 +284,25 @@ def artist_songs_flow(artist_uri):
         add_songs(album_songs, artist)
     log("Done adding all artist {} songs to database".format(artist_uri))
     return artist
+
+# songs_to_playlist("Spotipy2")
+# Playlist_name ->
+# Takes a playlist and gets all the songs assoiciated with it and adds them to
+# spotify
+def songs_to_playlist(playlist_name):
+    user = session['user_id']
+    playlist_uri = make_playlist(playlist_name)
+    playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    tracks = []
+
+    for artist in playlist.artists:
+        for song in artist.songs:
+            tracks.append(song.song_uri)
+
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+    for i in range(0, len(tracks), 100):
+        sp.user_playlist_add_tracks(user, playlist_uri, tracks[i:i+100])
+    
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
