@@ -109,7 +109,16 @@ def logged_in():
 
 @app.route('/new_artist')
 def new_artist_route():
-    artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
+    artist = request.args.get('artist')
+    playlist = request.args.get('playlist')
+    if artist is None:
+        return "Failed no artist"
+    if playlist is None:
+        return "Failed no playlist"
+    artist_uri = search_first_artist(artist)
+    if artist_uri is None:
+        return "couldnt find artist, cancelling"
+    artist_playlist_flow(playlist, artist_uri)
     return "Success"
 
 @app.route('/delete_playlist')
@@ -121,6 +130,12 @@ def delete_playlist_route():
 def update_playlists_route():
     update_all_playlists(session['user_uri'])
     return "Success"
+
+@app.route('/testing')
+def testing():
+    print(search_first_artist('thedecline'))
+    return "Done"
+
 
 # FUNCTIONS
 
@@ -280,7 +295,7 @@ def get_artist_albums(artist_uri):
     artist_albums = response['items']
     while response['next'] is not None:
         offset = offset + 20
-        response = sp.artist_albums(artist_uri, type='album', offset=offset)
+        response = sp.artist_albums(artist_uri, album_type='album', offset=offset)
         artist_albums = artist_albums + response['items']
     log("009c: Got all albums belonging to: {}".format(artist_uri))
     return list(map(lambda x: x['uri'], artist_albums))

@@ -10,6 +10,8 @@ DONE Migrate to spotipy module
 DONE When checking for new music don't look up songs if the album already exists in database
 Sort out Auth token expiration
 Only add artist to playlist, not compilation artists
+UI
+Only add song to database for artist if it matches that artist (ie, no compilations)
 
 "FEATURES"
 ---------------
