@@ -123,7 +123,10 @@ def new_artist_route():
 
 @app.route('/delete_playlist')
 def delete_playlist_route():
-    delete_playlist_name('Spotipy')
+    playlist = request.args.get('playlist')
+    if playlist is None:
+        return "No playlist specified"
+    delete_playlist_name(playlist)
     return "Success"
 
 @app.route('/update_playlists')

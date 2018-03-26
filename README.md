@@ -12,6 +12,7 @@ Sort out Auth token expiration
 Only add artist to playlist, not compilation artists
 UI
 Only add song to database for artist if it matches that artist (ie, no compilations)
+Only delete playlists if they are in the database so users can't delete their own playlists
 
 "FEATURES"
 ---------------
