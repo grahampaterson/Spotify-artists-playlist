@@ -107,8 +107,10 @@ def logged_in():
     log("------------------START------------------")
     # artist_playlist_flow('Spotipy', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
     # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
-    update_all_playlists(session['user_uri'])
+    # update_all_playlists(session['user_uri'])
     # delete_playlist_name('Spotipy')
+    # search_first_artist('Justinfeffegfegg')
+    artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
     log("-------------------END-------------------")
 
 
@@ -204,11 +206,19 @@ def make_playlist(playlist_name):
 # search_query -> listof_search_results
 # takes a search query and returns a list of results
 def search_artist(search):
-    log("005o: Searching for artist {}".format(artist))
+    log("005o: Searching for artist {}".format(search))
     sp = spotipy.client.Spotify(session['token'], True, creds)
     search_results = sp.search(search, type='artist')
     log("005c: Returning search results")
     return search_results['artists']['items']
+
+# search_query -> first_artist_uri
+# takes a search query and returns the first result
+def search_first_artist(search):
+    artists = search_artist(search)
+    if len(artists) is 0:
+        return None
+    return artists[0]['uri']
 
 # artist_uri -> artist_db
 # Takes and artist uri and adds it to the database, creates it if it doesn't exist,
