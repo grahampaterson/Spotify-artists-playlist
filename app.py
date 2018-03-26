@@ -107,10 +107,10 @@ def logged_in():
     log("------------------START------------------")
     # artist_playlist_flow('Spotipy', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
     # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
-    # update_all_playlists(session['user_uri'])
+    update_all_playlists(session['user_uri'])
     # delete_playlist_name('Spotipy')
     # search_first_artist('Justinfeffegfegg')
-    artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
+    # artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
     log("-------------------END-------------------")
 
 
