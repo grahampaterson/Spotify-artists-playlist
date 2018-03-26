@@ -104,18 +104,23 @@ def logged_in():
     user_data = sp.current_user()
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
-    log("------------------START------------------")
-    # artist_playlist_flow('Spotipy', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
-    # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
-    update_all_playlists(session['user_uri'])
-    # delete_playlist_name('Spotipy')
-    # search_first_artist('Justinfeffegfegg')
-    # artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
-    log("-------------------END-------------------")
-
 
     return jsonify(user_data)
 
+@app.route('/new_artist')
+def new_artist_route():
+    artist_playlist_flow('Spotipy', search_first_artist('A Wilhelm Scream'))
+    return "Success"
+
+@app.route('/delete_playlist')
+def delete_playlist_route():
+    delete_playlist_name('Spotipy')
+    return "Success"
+
+@app.route('/update_playlists')
+def update_playlists_route():
+    update_all_playlists(session['user_uri'])
+    return "Success"
 
 # FUNCTIONS
 
