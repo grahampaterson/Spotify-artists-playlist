@@ -123,7 +123,10 @@ def new_artist_route():
 
 @app.route('/delete_playlist')
 def delete_playlist_route():
-    delete_playlist_name('Spotipy')
+    playlist = request.args.get('playlist')
+    if playlist is None:
+        return "No playlist specified"
+    delete_playlist_name(playlist)
     return "Success"
 
 @app.route('/update_playlists')
@@ -133,7 +136,7 @@ def update_playlists_route():
 
 @app.route('/testing')
 def testing():
-    print(search_first_artist('thedecline'))
+    get_artist_albums('spotify:artist:7MMcJHFoJYUjHIk9YwTufv')
     return "Done"
 
 
@@ -298,6 +301,8 @@ def get_artist_albums(artist_uri):
         response = sp.artist_albums(artist_uri, album_type='album', offset=offset)
         artist_albums = artist_albums + response['items']
     log("009c: Got all albums belonging to: {}".format(artist_uri))
+    # TODO if album_group is appears_on remove it from list
+    print(artist_albums)
     return list(map(lambda x: x['uri'], artist_albums))
 
 # album_uri -> list_of_song_uris
