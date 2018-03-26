@@ -85,7 +85,7 @@ def reauth():
 @app.route('/callback/q')
 def callback():
     response_data = auth.get_access_token(request.args['code'])
-    print(response_data)
+    # print(response_data)
     token_info = response_data
     access_token = response_data['access_token']
     refresh_token = response_data['refresh_token']
@@ -104,11 +104,13 @@ def logged_in():
     user_data = sp.current_user()
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
-
-    # artist_playlist_flow('Testing', 'spotify:artist:2D4FOOOtWycb3Aw9nY5n3c')
+    log("------------------START------------------")
+    # artist_playlist_flow('Spotipy', 'spotify:artist:0DK7FqcaL3ks9TfFn9y1sD')
     # update_playlist('spotify:user:1163565663:playlist:0uYoHJ9AOSLvQEZWNVMwOI')
-    # update_all_playlists(session['user_uri'])
-    delete_playlist('spotify:user:1163565663:playlist:71GS9Yr0MxkEhg58QSNbjl')
+    update_all_playlists(session['user_uri'])
+    # delete_playlist_name('Spotipy')
+    log("-------------------END-------------------")
+
 
     return jsonify(user_data)
 
@@ -137,6 +139,29 @@ def add_user(user_uri):
 def new_spotify_playlist(playlist_name):
     log("002o: Searching for playlist {} on spotify".format(playlist_name))
     sp = spotipy.client.Spotify(session['token'], True, creds)
+    # offset = 0
+    # playlists = sp.user_playlists(session['user_id'], offset=offset)
+    # has_next = True
+    # while (has_next is not None):
+    #     for playlist in playlists['items']:
+    #         if playlist['name'] == playlist_name:
+    #             log("Found playlist {} in your spotify".format(playlist_name))
+    #             return playlist['uri']
+    #     has_next = playlists['next']
+    #     offset = offset + 50
+    #     playlists = sp.user_playlists(session['user_id'], offset=offset)
+    already_exist = find_spotify_playlist(playlist_name)
+    if already_exist is not None:
+        return already_exist
+    log("Couldn't find playlist, Creating playlist {} on Spotify".format(playlist_name))
+    new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
+    log("002c: Done Searching for playlist")
+    return new_playlist['uri']
+
+# playlist_name -> playlist_uri | None
+# returns a playlist uri if the name exists on spotify or returns None
+def find_spotify_playlist(playlist_name):
+    sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     playlists = sp.user_playlists(session['user_id'], offset=offset)
     has_next = True
@@ -148,10 +173,7 @@ def new_spotify_playlist(playlist_name):
         has_next = playlists['next']
         offset = offset + 50
         playlists = sp.user_playlists(session['user_id'], offset=offset)
-    log("Couldn't find playlist, Creating playlist {} on Spotify".format(playlist_name))
-    new_playlist = sp.user_playlist_create(sp.current_user()['id'], playlist_name)
-    log("002c: Done Searching for playlist")
-    return new_playlist['uri']
+    return None
 
 # playlist_uri, user_db -> playlist_db
 # take a playlist uri and adds it to dataabse associated to user
@@ -320,7 +342,16 @@ def songs_to_playlist_uri(playlist_uri):
 
     new_tracks = filter_songs(get_playlist_songs(playlist_uri), tracks)
     sp = spotipy.client.Spotify(session['token'], True, creds)
+
     # TODO check if user has playlist with this uri, if not just skip it and delete from db maybe
+    # NOTE for some reason user_playlist_follow doesn't accept a uri so needs
+    # to be converted to just an id
+    playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+    response = sp.user_playlist_is_following(user, playlist_id, [user])
+    if response[0] is False:
+        log("Couldn't update playlist because it no longer exists on spotify, deleted from DB")
+        return delete_playlist(playlist_uri)
+
     for i in range(0, len(new_tracks), 100):
         sp.user_playlist_add_tracks(user, playlist_uri, new_tracks[i:i+100])
     log("015c: Done adding all songs for playlist {} to spotify".format(playlist_uri))
@@ -339,9 +370,12 @@ def update_playlist(playlist_uri):
 
 # user_uri -> user_uri
 # takes a user_uri and updates all their playlists to be up to date
+# TODO add logging for this function
 def update_all_playlists(user_uri):
     user = add_user(user_uri)
     for playlist in user.playlists:
+        if len(playlist.artists) is 0:
+            continue
         update_playlist(playlist.playlist_uri)
     return user_uri
 
@@ -353,6 +387,7 @@ def filter_songs(existing_songs, songs):
     return new_songs
 
 # playlist_uri -> list_of_song_uris
+# takes a spotify playlist uri and returns all the songs in the playlist
 def get_playlist_songs(playlist_uri):
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, creds)
@@ -360,6 +395,7 @@ def get_playlist_songs(playlist_uri):
     # sp = spotipy.client.Spotify(session['token'], True, creds)
     offset = 0
     response = sp.user_playlist_tracks(user, playlist_id=playlist_uri, fields='items.track.uri, next', offset=offset)
+    # TODO what if playlist doesn't exist?
     playlist_songs = response['items']
     while response['next'] is not None:
         offset = offset + 100
@@ -367,7 +403,6 @@ def get_playlist_songs(playlist_uri):
         playlist_songs = playlist_songs + response['items']
 
     return list(map(lambda x: x['track']['uri'], playlist_songs))
-
 
 # Playlist_name, artist_uri -> playlist_uri
 # takes a playlist name and artist and creates database entries, subscriptions and
@@ -387,6 +422,24 @@ def delete_playlist(playlist_uri):
     playlist.artists = []
     db.session.commit()
     return playlist_uri
+
+# playlist_name -> Boolean
+# takes a playlist name of a spotify playlist and deletes the playlist and all
+# db subscriptions. returns true if successful else false
+def delete_playlist_name(playlist_name):
+    user = session['user_id']
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+
+    playlist_uri = find_spotify_playlist(playlist_name)
+    if playlist_uri is None:
+        log('Couldnt find playlist on spotify')
+        return False
+    # NOTE for some reason user_playlist_follow doesn't accept a uri so needs
+    # to be converted to just an id
+    playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+    sp.user_playlist_unfollow(user, playlist_id=playlist_id)
+    delete_playlist(playlist_uri)
+    return True
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
