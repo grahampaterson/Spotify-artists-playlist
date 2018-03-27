@@ -301,8 +301,10 @@ def get_artist_albums(artist_uri):
         response = sp.artist_albums(artist_uri, album_type='album', offset=offset)
         artist_albums = artist_albums + response['items']
     log("009c: Got all albums belonging to: {}".format(artist_uri))
-    # TODO if album_group is appears_on remove it from list
-    print(artist_albums)
+    # NOTE only adds albums, change for singles/compilations etc
+    def remove_comp(album):
+        return album['album_group'] == "album"
+    artist_albums = list(filter(remove_comp, artist_albums))
     return list(map(lambda x: x['uri'], artist_albums))
 
 # album_uri -> list_of_song_uris
