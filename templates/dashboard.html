@@ -1,12 +1,19 @@
 {% extends "layout.html" %}
 {% block body %}
-
-<form action="{{ url_for('make_playlist') }}"  id="search-query" method="post">
+<h2>Add artist to playlist</h2>
+<form action="{{ url_for('new_artist_route') }}"  id="search-query" method="get">
+  Artist Name: <input type="text" name="artist"><br>
   Playlist Name: <input type="text" name="playlist"><br>
-  Artist list (comma separated): <input type="text" name="artists"><br>
-  <input id="find-artists" type="submit" value="Submit">
+  <input id="add-artist" type="submit" value="Submit">
 </form>
-
-<div id="search-results"></div>
+<h2>Delete playlist</h2>
+<form action="{{ url_for('delete_playlist_route') }}"  id="playlist-name" method="get">
+  Playlist Name: <input type="text" name="playlist"><br>
+  <input id="delete-playlist" type="submit" value="Submit">
+</form>
+<h2>Update playlists</h2>
+<form action="{{ url_for('update_playlists_route') }}"  id="update-playlists" method="get">
+  <input id="update-button" type="submit" value="Submit">
+</form>
 
 {% endblock %}

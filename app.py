@@ -5,7 +5,7 @@ import spotipy.util as util
 from spotipy.oauth2 import SpotifyClientCredentials
 import json
 import requests
-from flask import Flask, redirect, request, session, url_for, jsonify
+from flask import Flask, redirect, request, session, url_for, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from helpers import log
 
@@ -105,34 +105,38 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
-    return jsonify(user_data)
+    return render_template('dashboard.html')
 
 @app.route('/new_artist')
 def new_artist_route():
     artist = request.args.get('artist')
     playlist = request.args.get('playlist')
     if artist is None:
-        return "Failed no artist"
+        print("Failed no artist")
+        return redirect(url_for('logged_in'))
     if playlist is None:
-        return "Failed no playlist"
+        print("Failed no playlist")
+        return redirect(url_for('logged_in'))
     artist_uri = search_first_artist(artist)
     if artist_uri is None:
-        return "couldnt find artist, cancelling"
+        print("couldnt find artist, cancelling")
+        return redirect(url_for('logged_in'))
     artist_playlist_flow(playlist, artist_uri)
-    return "Success"
+    return redirect(url_for('logged_in'))
 
 @app.route('/delete_playlist')
 def delete_playlist_route():
     playlist = request.args.get('playlist')
     if playlist is None:
-        return "No playlist specified"
+        print("no playlist specified")
+        return redirect(url_for('logged_in'))
     delete_playlist_name(playlist)
-    return "Success"
+    return redirect(url_for('logged_in'))
 
 @app.route('/update_playlists')
 def update_playlists_route():
     update_all_playlists(session['user_uri'])
-    return "Success"
+    return redirect(url_for('logged_in'))
 
 @app.route('/testing')
 def testing():
