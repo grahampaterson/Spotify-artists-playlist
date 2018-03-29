@@ -140,7 +140,7 @@ def update_playlists_route():
 
 @app.route('/testing')
 def testing():
-    get_artist_albums('spotify:artist:7MMcJHFoJYUjHIk9YwTufv')
+    delete_playlist('333')
     return "Done"
 
 
@@ -455,14 +455,18 @@ def artist_playlist_flow(playlist_name, artist_uri):
     log("014c: Done full flow to add artist to playlist")
     return playlist.playlist_uri
 
-# playlist_uri -> Playlist_uri
+# playlist_uri -> Boolean
 # takes a playlist uri and deletes all it's subscriptions. this does not delete
 # the playlist, artist, or it's songs. It simply removes the relationship
+# Returns True if the playlist exists or false if it doesn't
 def delete_playlist(playlist_uri):
     playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
+    if playlist is None:
+        log("Playlist_uri {} isn't in the database".format(playlist_uri))
+        return False
     playlist.artists = []
     db.session.commit()
-    return playlist_uri
+    return True
 
 # playlist_name -> Boolean
 # takes a playlist name of a spotify playlist and deletes the playlist and all
@@ -473,14 +477,19 @@ def delete_playlist_name(playlist_name):
 
     playlist_uri = find_spotify_playlist(playlist_name)
     if playlist_uri is None:
-        log('Couldnt find playlist on spotify')
+        log("Couldn't find playlist with that name on spotify")
         return False
-    # NOTE for some reason user_playlist_follow doesn't accept a uri so needs
-    # to be converted to just an id
-    playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
-    sp.user_playlist_unfollow(user, playlist_id=playlist_id)
-    delete_playlist(playlist_uri)
-    return True
+
+    if delete_playlist(playlist_uri):
+        log("Playlist successfully deleted from database")
+        # NOTE for some reason user_playlist_follow doesn't accept a uri so needs
+        # to be converted to just an id
+        playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+        sp.user_playlist_unfollow(user, playlist_id=playlist_id)
+        log("Playlist deleted from spotify succesfully")
+        return True
+    log("Failed to delete playlist from spotify")
+    return False
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
