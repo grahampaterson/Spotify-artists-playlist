@@ -105,6 +105,8 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
+    # _test()
+
     return render_template('dashboard.html')
 
 @app.route('/new_artist')
@@ -472,6 +474,10 @@ def delete_playlist(playlist_uri):
 # takes a playlist name of a spotify playlist and deletes the playlist and all
 # db subscriptions. returns true if successful else false
 def delete_playlist_name(playlist_name):
+    """
+    >>> delete_playlist_name("Playlist name doesn't exist")
+    False
+    """
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, creds)
 
@@ -490,6 +496,10 @@ def delete_playlist_name(playlist_name):
         return True
     log("Failed to delete playlist from spotify")
     return False
+
+def _test():
+    import doctest
+    doctest.testmod()
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
