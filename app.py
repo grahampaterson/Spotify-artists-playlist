@@ -369,7 +369,7 @@ def songs_to_playlist_name(playlist_name):
     return songs_to_playlist_uri(playlist_uri)
 
 # Playlist_uri -> playlist_uri
-# Takes a playlist_uri and gets all the songs assoiciated with it and adds them to
+# Takes a playlist_uri and gets all the songs assoiciated with it from the db and adds them to
 # spotify if they aren't already in the playlist
 def songs_to_playlist_uri(playlist_uri):
     log("015o: Adding all songs for playlist {} to spotify".format(playlist_uri))
