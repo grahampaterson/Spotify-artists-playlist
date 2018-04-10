@@ -72,11 +72,21 @@ auth = spotipy.oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET,'http://127.0.0.1:50
 
 # ROUTES
 @app.route('/')
-def index():
-    if session.get('token') == None:
+def logged_in():
+    if session.get('token_info') == None:
         return redirect(auth.get_authorize_url())
 
-    return redirect(url_for('logged_in'))
+    if auth._is_token_expired(session['token_info']):
+        print('refreshed token')
+        print(auth.refresh_access_token(session['refresh']))
+        print('\n{}'.format(session['token_info']))
+
+    sp = spotipy.client.Spotify(session['token'], True, creds)
+    user_data = sp.current_user()
+    session['user_uri'] = user_data['uri']
+    session['user_id'] = user_data['id']
+
+    return render_template('dashboard.html')
 
 @app.route('/auth')
 def reauth():
@@ -85,34 +95,18 @@ def reauth():
 @app.route('/callback/q')
 def callback():
     response_data = auth.get_access_token(request.args['code'])
-    session['token_info'] = response_data
     print(response_data)
     access_token = response_data['access_token']
     refresh_token = response_data['refresh_token']
     expires_at = response_data['expires_at']
 
     #add token to session
+    session['token_info'] = response_data
     session['token'] = access_token
     session['refresh'] = refresh_token
     session['expires_at'] = expires_at
 
     return redirect(url_for('logged_in'))
-
-@app.route('/logged-in')
-def logged_in():
-    if session.get('token_info') == None:
-        return redirect(auth.get_authorize_url())
-
-    if auth._is_token_expired(session['token_info']):
-        print('refreshed token')
-        print(auth.refresh_access_token(session['refresh']))
-
-    sp = spotipy.client.Spotify(session['token'], True, creds)
-    user_data = sp.current_user()
-    session['user_uri'] = user_data['uri']
-    session['user_id'] = user_data['id']
-
-    return render_template('dashboard.html')
 
 @app.route('/new_artist')
 def new_artist_route():
