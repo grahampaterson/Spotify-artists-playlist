@@ -152,8 +152,12 @@ def update_playlists_route():
     return redirect(url_for('logged_in'))
 
 @app.route('/testing')
-@auth_required
 def testing():
+    return render_template("testing.html")
+
+@app.route('/tunein')
+@auth_required
+def tunein():
     # Spotify Creds
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
@@ -171,7 +175,6 @@ def testing():
         artist_name = artist_song[:divider]
         song_name = artist_song[divider + 3:]
         return "{} {}".format(song_name, artist_name)
-        # return {'artist name': artist_name, 'song_name': song_name}
 
     # create spotify playlist and get uri & id
     playlist_uri = new_spotify_playlist('181FM Super 70s')
@@ -179,19 +182,20 @@ def testing():
 
     # search for song on spotify
     search_response = sp.search(parse_song(response), limit=1)
-    song_uri = search_response['tracks']['items'][0]['uri']
+    try:
+        song_uri = search_response['tracks']['items'][0]['uri']
+        if song_uri != session.get('last_song'):
+            # adding song to playlist
+            sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
+            print("New song added: {}".format(song_uri))
+            session['last_song'] = song_uri
+        else:
+            print("Same song still playing... Didn't Add")
+    except:
+        print("Couldn't find song: {} - {}".format(song_name, artist_name))
+        pass
 
-    if song_uri != session.get('last_song'):
-        # adding song to playlist
-        sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
-        print("New song added: {}".format(song_uri))
-        session['last_song'] = song_uri
-    else:
-        print("Same song still playing... Didn't Add")
-
-    time.sleep(120)
-    return redirect(url_for('testing'))
-
+    return "xxx"
 
 # FUNCTIONS
 
