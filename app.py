@@ -102,24 +102,6 @@ def auth_required(f):
 @app.route('/')
 @auth_required
 def logged_in():
-    # if session.get('token_info') == None:
-    #     return redirect(auth.get_authorize_url())
-    #
-    # if auth._is_token_expired(session['token_info']):
-    #     print('refreshed token')
-    #     response_data = auth.refresh_access_token(session['refresh'])
-    #     session['token_info'] = response_data
-    #     session['token'] = response_data['access_token']
-    #     session['refresh'] = response_data['refresh_token']
-    #     session['expires_at'] = response_data['expires_at']
-    #     print("Refresh returned: {}".format(response_data))
-    #     print('\n Previous Token Info: {}'.format(session['token_info']))
-    # print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
-
-    # sp = spotipy.client.Spotify(session['token'], True, CREDS)
-    # user_data = sp.current_user()
-    # session['user_uri'] = user_data['uri']
-    # session['user_id'] = user_data['id']
 
     return render_template('dashboard.html')
 
@@ -171,9 +153,45 @@ def update_playlists_route():
     return redirect(url_for('logged_in'))
 
 @app.route('/testing')
+@auth_required
 def testing():
-    delete_playlist('333')
-    return "Done"
+    # Spotify Creds
+    user = session['user_id']
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
+
+    URL = "https://feed.tunein.com/profiles/s250404/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BJNIDAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
+    response = requests.get(URL)
+
+    def parse_song(response):
+        artist_song = dict(response.json())['Header']['Subtitle']
+        divider = artist_song.find(" - ")
+        if divider == -1:
+            print("No Divider")
+            return -1
+
+        artist_name = artist_song[:divider]
+        song_name = artist_song[divider + 3:]
+        return "{} {}".format(song_name, artist_name)
+        # return {'artist name': artist_name, 'song_name': song_name}
+
+    # create spotify playlist and get uri & id
+    playlist_uri = new_spotify_playlist('Soma70')
+    playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+
+    # search for song on spotify
+    search_response = sp.search(parse_song(response), limit=1)
+    song_uri = search_response['tracks']['items'][0]['uri']
+
+    if song_uri != session.get('last_song'):
+        # adding song to playlist
+        sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
+        print("New song added: {}".format(song_uri))
+        session['last_song'] = song_uri
+    else:
+        print("Same song still playing... Didn't Add")
+
+    time.sleep(120)
+    return redirect(url_for('testing'))
 
 
 # FUNCTIONS
