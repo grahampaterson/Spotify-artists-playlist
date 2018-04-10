@@ -9,6 +9,7 @@ from flask import Flask, redirect, request, session, url_for, jsonify, render_te
 from flask_sqlalchemy import SQLAlchemy
 from helpers import log
 import time
+from functools import wraps
 
 # Init flask app
 app = Flask(__name__)
@@ -71,33 +72,56 @@ PORT = 5000
 CREDS = spotipy.oauth2.SpotifyClientCredentials(CLIENT_ID, CLIENT_SECRET)
 auth = spotipy.oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET,'http://127.0.0.1:5000/callback/q', None, 'playlist-modify-private playlist-modify-public playlist-read-private')
 
+# DECORATOR ROUTES
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if token is in session
+        if session.get('token_info') == None:
+            return redirect(auth.get_authorize_url())
+        # check if token is expired and refresh it
+        if auth._is_token_expired(session['token_info']):
+            print('refreshed token')
+            response_data = auth.refresh_access_token(session['refresh'])
+            session['token_info'] = response_data
+            session['token'] = response_data['access_token']
+            session['refresh'] = response_data['refresh_token']
+            session['expires_at'] = response_data['expires_at']
+            print("Refresh returned: {}".format(response_data))
+            print('\n Previous Token Info: {}'.format(session['token_info']))
+        print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
+        # Storing User data
+        sp = spotipy.client.Spotify(session['token'], True, CREDS)
+        user_data = sp.current_user()
+        session['user_uri'] = user_data['uri']
+        session['user_id'] = user_data['id']
+        return f(*args, **kwargs)
+    return decorated_function
+
 # ROUTES
 @app.route('/')
+@auth_required
 def logged_in():
-    if session.get('token_info') == None:
-        return redirect(auth.get_authorize_url())
+    # if session.get('token_info') == None:
+    #     return redirect(auth.get_authorize_url())
+    #
+    # if auth._is_token_expired(session['token_info']):
+    #     print('refreshed token')
+    #     response_data = auth.refresh_access_token(session['refresh'])
+    #     session['token_info'] = response_data
+    #     session['token'] = response_data['access_token']
+    #     session['refresh'] = response_data['refresh_token']
+    #     session['expires_at'] = response_data['expires_at']
+    #     print("Refresh returned: {}".format(response_data))
+    #     print('\n Previous Token Info: {}'.format(session['token_info']))
+    # print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
 
-    if auth._is_token_expired(session['token_info']):
-        print('refreshed token')
-        response_data = auth.refresh_access_token(session['refresh'])
-        session['token_info'] = response_data
-        session['token'] = response_data['access_token']
-        session['refresh'] = response_data['refresh_token']
-        session['expires_at'] = response_data['expires_at']        
-        print("Refresh returned: {}".format(response_data))
-        print('\n Previous Token Info: {}'.format(session['token_info']))
-    print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
-
-    sp = spotipy.client.Spotify(session['token'], True, CREDS)
-    user_data = sp.current_user()
-    session['user_uri'] = user_data['uri']
-    session['user_id'] = user_data['id']
+    # sp = spotipy.client.Spotify(session['token'], True, CREDS)
+    # user_data = sp.current_user()
+    # session['user_uri'] = user_data['uri']
+    # session['user_id'] = user_data['id']
 
     return render_template('dashboard.html')
-
-@app.route('/auth')
-def reauth():
-    return redirect(auth.get_authorize_url())
 
 @app.route('/callback/q')
 def callback():
