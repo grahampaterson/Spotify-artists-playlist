@@ -81,14 +81,13 @@ def auth_required(f):
             return redirect(auth.get_authorize_url())
         # check if token is expired and refresh it
         if auth._is_token_expired(session['token_info']):
-            print('refreshed token')
+            print('Refreshing Token: {}'.format(session['token_info']))
             response_data = auth.refresh_access_token(session['refresh'])
             session['token_info'] = response_data
             session['token'] = response_data['access_token']
             session['refresh'] = response_data['refresh_token']
             session['expires_at'] = response_data['expires_at']
             print("Refresh returned: {}".format(response_data))
-            print('\n Previous Token Info: {}'.format(session['token_info']))
         print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
         # Storing User data
         sp = spotipy.client.Spotify(session['token'], True, CREDS)
@@ -159,7 +158,7 @@ def testing():
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
-    URL = "https://feed.tunein.com/profiles/s250404/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BJNIDAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
+    URL = "https://feed.tunein.com/profiles/s126791/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
     response = requests.get(URL)
 
     def parse_song(response):
@@ -175,7 +174,7 @@ def testing():
         # return {'artist name': artist_name, 'song_name': song_name}
 
     # create spotify playlist and get uri & id
-    playlist_uri = new_spotify_playlist('Soma70')
+    playlist_uri = new_spotify_playlist('181FM Super 70s')
     playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
 
     # search for song on spotify
