@@ -8,6 +8,7 @@ import requests
 from flask import Flask, redirect, request, session, url_for, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from helpers import log
+import time
 
 # Init flask app
 app = Flask(__name__)
@@ -67,7 +68,7 @@ CLIENT_SECRET = key_data['ClientSecret']
 
 # CONSTANTS
 PORT = 5000
-creds = spotipy.oauth2.SpotifyClientCredentials(CLIENT_ID, CLIENT_SECRET)
+CREDS = spotipy.oauth2.SpotifyClientCredentials(CLIENT_ID, CLIENT_SECRET)
 auth = spotipy.oauth2.SpotifyOAuth(CLIENT_ID, CLIENT_SECRET,'http://127.0.0.1:5000/callback/q', None, 'playlist-modify-private playlist-modify-public playlist-read-private')
 
 # ROUTES
@@ -78,10 +79,16 @@ def logged_in():
 
     if auth._is_token_expired(session['token_info']):
         print('refreshed token')
-        print(auth.refresh_access_token(session['refresh']))
-        print('\n{}'.format(session['token_info']))
+        response_data = auth.refresh_access_token(session['refresh'])
+        session['token_info'] = response_data
+        session['token'] = response_data['access_token']
+        session['refresh'] = response_data['refresh_token']
+        session['expires_at'] = response_data['expires_at']        
+        print("Refresh returned: {}".format(response_data))
+        print('\n Previous Token Info: {}'.format(session['token_info']))
+    print('Time till refresh: {}'.format(session['token_info']['expires_at'] - int(time.time())))
 
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     user_data = sp.current_user()
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
@@ -168,7 +175,7 @@ def add_user(user_uri):
 # takes a playlist name and creates it on spotify or returns the URI if it already exists
 def new_spotify_playlist(playlist_name):
     log("002o: Searching for playlist {} on spotify".format(playlist_name))
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     # offset = 0
     # playlists = sp.user_playlists(session['user_id'], offset=offset)
     # has_next = True
@@ -191,7 +198,7 @@ def new_spotify_playlist(playlist_name):
 # playlist_name -> playlist_uri | None
 # returns a playlist uri if the name exists on spotify or returns None
 def find_spotify_playlist(playlist_name):
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     offset = 0
     playlists = sp.user_playlists(session['user_id'], offset=offset)
     has_next = True
@@ -235,7 +242,7 @@ def make_playlist(playlist_name):
 # takes a search query and returns a list of results
 def search_artist(search):
     log("005o: Searching for artist {}".format(search))
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     search_results = sp.search(search, type='artist')
     log("005c: Returning search results")
     return search_results['artists']['items']
@@ -297,7 +304,7 @@ def sub_flow(playlist_name, artist_uri):
 # takes an artist uri and returns all the artist's albums from spotify as a list
 def get_artist_albums(artist_uri):
     log("009o: Getting all albums belonging to: {}".format(artist_uri))
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     offset = 0
     response = sp.artist_albums(artist_uri, offset=offset)
     artist_albums = response['items']
@@ -316,7 +323,7 @@ def get_artist_albums(artist_uri):
 # takes an album uri and returns all of the album's songs uris from spotify  as a list
 def get_album_songs(album_uri):
     log("010o: Getting all songs belonging to: {}".format(album_uri))
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
     offset = 0
     response = sp.album_tracks(album_uri, offset=offset)
     album_songs = response['items']
@@ -383,7 +390,7 @@ def songs_to_playlist_uri(playlist_uri):
             tracks.append(song.song_uri)
 
     new_tracks = filter_songs(get_playlist_songs(playlist_uri), tracks)
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
     # TODO check if user has playlist with this uri, if not just skip it and delete from db maybe
     # NOTE for some reason user_playlist_follow doesn't accept a uri so needs
@@ -432,9 +439,9 @@ def filter_songs(existing_songs, songs):
 # takes a spotify playlist uri and returns all the songs in the playlist
 def get_playlist_songs(playlist_uri):
     user = session['user_id']
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
-    # sp = spotipy.client.Spotify(session['token'], True, creds)
+    # sp = spotipy.client.Spotify(session['token'], True, CREDS)
     offset = 0
     response = sp.user_playlist_tracks(user, playlist_id=playlist_uri, fields='items.track.uri, next', offset=offset)
     # TODO what if playlist doesn't exist?
@@ -478,7 +485,7 @@ def delete_playlist_name(playlist_name):
     False
     """
     user = session['user_id']
-    sp = spotipy.client.Spotify(session['token'], True, creds)
+    sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
     playlist_uri = find_spotify_playlist(playlist_name)
     if playlist_uri is None:
