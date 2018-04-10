@@ -105,8 +105,6 @@ def logged_in():
     session['user_uri'] = user_data['uri']
     session['user_id'] = user_data['id']
 
-    # _test()
-
     return render_template('dashboard.html')
 
 @app.route('/new_artist')
@@ -500,6 +498,7 @@ def delete_playlist_name(playlist_name):
 def _test():
     import doctest
     doctest.testmod()
+
 
 if __name__ == "__main__":
     app.run(debug=True,port=PORT)
