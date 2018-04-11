@@ -181,7 +181,8 @@ def tunein():
     playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
 
     # search for song on spotify
-    search_response = sp.search(parse_song(response), limit=1)
+    search_q = parse_song(response)
+    search_response = sp.search(search_q, limit=1)
     try:
         song_uri = search_response['tracks']['items'][0]['uri']
         if song_uri != session.get('last_song'):
@@ -192,7 +193,7 @@ def tunein():
         else:
             print("Same song still playing... Didn't Add")
     except:
-        print("Couldn't find song: {} - {}".format(song_name, artist_name))
+        print("Couldn't find song: {}".format(search_q))
         pass
 
     return "xxx"
