@@ -158,11 +158,13 @@ def testing():
 @app.route('/tunein')
 @auth_required
 def tunein():
+    PLAYLIST_NAME = "The Beat"
+
     # Spotify Creds
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
-    URL = "https://feed.tunein.com/profiles/s126791/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
+    URL = "https://feed.tunein.com/profiles/s35189/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
     response = requests.get(URL)
 
     def parse_song(response):
@@ -177,7 +179,7 @@ def tunein():
         return "{} {}".format(song_name, artist_name)
 
     # create spotify playlist and get uri & id
-    playlist_uri = new_spotify_playlist('181FM Super 70s')
+    playlist_uri = new_spotify_playlist(PLAYLIST_NAME)
     playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
 
     # search for song on spotify
