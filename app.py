@@ -158,13 +158,14 @@ def testing():
 @app.route('/tunein')
 @auth_required
 def tunein():
-    PLAYLIST_NAME = "The Beat"
+    PLAYLIST_NAME = "181FM Old School HipHop"
+    RADIO_ID = "s126792"
 
     # Spotify Creds
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
-    URL = "https://feed.tunein.com/profiles/s35189/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1"
+    URL = "https://feed.tunein.com/profiles/{}/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1".format(RADIO_ID)
     response = requests.get(URL)
 
     def parse_song(response):

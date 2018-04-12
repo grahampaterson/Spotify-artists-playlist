@@ -18,5 +18,5 @@ DONE add form to index page to access routes
 "FEATURES"
 ---------------
 If you rename a playlist it will no longer associate with that playlist and creates a new playlist with NAME
-If you try use the name of an existing playlist it will replace all the songs in that playlist
+-If you try use the name of an existing playlist it will replace all the songs in that playlist-
 You cannot delete a playlist if you did not create it with this tool, but if you add songs to an existing playlist then you are able to
