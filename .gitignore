@@ -4,3 +4,4 @@ client-secret.json
 __pycache__/
 database.sqlite
 log.txt
+.vscode
