@@ -277,14 +277,14 @@ def add_playlist_to_db(playlist_uri, user):
     return query
 
 # playlist_name -> playlist_uri
-# takes a playlist name and a user, adds playlist to user in database and returns uri for
+# takes a playlist name, adds playlist to user in database and returns uri for
 # playlist on spotify
 def make_playlist(playlist_name):
     user = add_user(session['user_uri'])
     log("004o: Creating playlist {}".format(playlist_name))
     playlist = new_spotify_playlist(playlist_name)
-    add_playlist = add_playlist_to_db(playlist, user)
-    log("004c: Done creating playlist {}, ".format(playlist_name, playlist))
+    add_playlist_to_db(playlist, user)
+    log("004c: Done creating playlist {}, {}".format(playlist_name, playlist))
     return playlist
 
 # search_query -> listof_search_results
@@ -329,7 +329,7 @@ def subscribe_artist(playlist_uri, artist):
     playlist = Playlist.query.filter_by(playlist_uri=playlist_uri).first()
     if playlist is None:
         log("Playlist didnt exist in database, creating it")
-        playlist = make_playlist("Untitled", add_user(session['user_uri']))
+        playlist = make_playlist("Untitled")
     # new_artist = add_artist_to_db(artist.artist_uri)
     playlist.artists.append(artist)
     db.session.add(playlist)
