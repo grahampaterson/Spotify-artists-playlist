@@ -158,46 +158,62 @@ def testing():
 @app.route('/tunein')
 @auth_required
 def tunein():
-    PLAYLIST_NAME = "181FM Old School HipHop"
-    RADIO_ID = "s126792"
 
     # Spotify Creds
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
 
-    URL = "https://feed.tunein.com/profiles/{}/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1".format(RADIO_ID)
-    response = requests.get(URL)
+    def tunein_scraper(playlist_name, radio_id):
+        PLAYLIST_NAME = playlist_name
+        RADIO_ID = radio_id
 
-    def parse_song(response):
-        artist_song = dict(response.json())['Header']['Subtitle']
-        divider = artist_song.find(" - ")
-        if divider == -1:
-            print("No Divider")
-            return -1
+        URL = "https://feed.tunein.com/profiles/{}/nowPlaying?itemToken=BgUFAAEAAQABAAEAb28BR-8BAAEFAAA&formats=mp3,aac,ogg,flash,html&serial=59779e03-614b-4da8-9a9b-2fcb1eea43b7&partnerId=RadioTime&version=2.27&itemUrlScheme=secure&build=2.27.0&reqAttempt=1".format(RADIO_ID)
+        response = requests.get(URL)
 
-        artist_name = artist_song[:divider]
-        song_name = artist_song[divider + 3:]
-        return "{} {}".format(song_name, artist_name)
+        def parse_song(response):
+            artist_song = dict(response.json())['Header']['Subtitle']
+            divider = artist_song.find(" - ")
+            if divider == -1:
+                print("No Divider")
+                return -1
 
-    # create spotify playlist and get uri & id
-    playlist_uri = new_spotify_playlist(PLAYLIST_NAME)
-    playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+            artist_name = artist_song[:divider]
+            song_name = artist_song[divider + 3:]
+            artist_name = artist_name.replace('f/', '') # Removes "f/" featured artists
+            return "{} {}".format(song_name, artist_name)
 
-    # search for song on spotify
-    search_q = parse_song(response)
-    search_response = sp.search(search_q, limit=1)
-    try:
-        song_uri = search_response['tracks']['items'][0]['uri']
-        if song_uri != session.get('last_song'):
-            # adding song to playlist
-            sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
-            print("New song added: {}".format(song_uri))
-            session['last_song'] = song_uri
+        # create spotify playlist and get uri & id
+        playlist_uri = new_spotify_playlist(PLAYLIST_NAME)
+        playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
+
+        # search for song on spotify
+        search_q = parse_song(response)
+        search_response = sp.search(search_q, limit=1)
+        try:
+            song_uri = search_response['tracks']['items'][0]['uri']
+            if song_uri != session.get(radio_id):
+                # adding song to playlist
+                sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
+                print("New song added: {}".format(song_uri))
+                session[radio_id] = song_uri
+            else:
+                print("Same song still playing... Didn't Add")
+        except:
+            print("Couldn't find song: {}".format(search_q))
+            pass
+
+        # Checks if playlist has 50+ songs and if it does, deletes the first song from the playlist
+        remove_track = sp.user_playlist_tracks(user, playlist_id=playlist_id, fields='items.track.uri, next', limit=50, offset=0)
+        if remove_track['next'] != None:
+            try:
+                sp.user_playlist_remove_specific_occurrences_of_tracks(user, playlist_id, [{'uri':remove_track['items'][0]['track']['uri'], 'positions':[0]}])
+            except:
+                pass
+            print('Playlist has more than 50 songs, removing oldest song')
         else:
-            print("Same song still playing... Didn't Add")
-    except:
-        print("Couldn't find song: {}".format(search_q))
-        pass
+            print('Playlist has less than 50 songs')
+
+    tunein_scraper("181FM Old School HipHop", "s126792")
 
     return "xxx"
 
