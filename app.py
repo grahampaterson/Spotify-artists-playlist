@@ -10,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from helpers import log
 import time
 from functools import wraps
+import re
 
 # Init flask app
 app = Flask(__name__)
@@ -180,7 +181,14 @@ def tunein():
             artist_name = artist_song[:divider]
             song_name = artist_song[divider + 3:]
             artist_name = artist_name.replace('f/', '') # Removes "f/" featured artists
-            return "{} {}".format(song_name, artist_name)
+            artist_name = artist_name.replace('-', ' ') # Replaces dashes '-' with spaces
+            s_query = "{} {}".format(song_name, artist_name)
+            # removes stuff in brackets
+            find = re.search('\(.*\)', s_query)
+            if find != None:
+                s_query = s_query.replace(find.group(0), '')
+                
+            return s_query
 
         # create spotify playlist and get uri & id
         playlist_uri = new_spotify_playlist(PLAYLIST_NAME)
@@ -199,6 +207,7 @@ def tunein():
             else:
                 print("Same song still playing... Didn't Add")
         except:
+            log("Couldn't find song: {}".format(search_q))
             print("Couldn't find song: {}".format(search_q))
             pass
 
@@ -215,6 +224,9 @@ def tunein():
 
     tunein_scraper("181FM Old School HipHop", "s126792")
     tunein_scraper("181.FM Super 70s", "s126791")
+    tunein_scraper("NME 1", "s159857")
+    tunein_scraper("SomaFM: Indie Pop Rocks!", "s2592")
+    tunein_scraper("QFM 96", "s30842")
 
     return "xxx"
 
