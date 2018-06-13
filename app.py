@@ -214,6 +214,7 @@ def tunein():
             print('Playlist has less than 50 songs')
 
     tunein_scraper("181FM Old School HipHop", "s126792")
+    tunein_scraper("181.FM Super 70s", "s126791")
 
     return "xxx"
 
