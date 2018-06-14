@@ -180,8 +180,11 @@ def tunein():
 
             artist_name = artist_song[:divider]
             song_name = artist_song[divider + 3:]
+            artist_name = artist_name.lower()
             artist_name = artist_name.replace('f/', '') # Removes "f/" featured artists
             artist_name = artist_name.replace('-', ' ') # Replaces dashes '-' with spaces
+            artist_name = artist_name.replace('&', ' ') # Replaces dashes '&' with spaces
+            artist_name = artist_name.replace('feat.', ' ') # Replaces dashes '&' with spaces
             s_query = "{} {}".format(song_name, artist_name)
             # removes stuff in brackets
             find = re.search('\(.*\)', s_query)
@@ -196,6 +199,8 @@ def tunein():
 
         # search for song on spotify
         search_q = parse_song(response)
+        if search_q == -1:
+            return -1
         search_response = sp.search(search_q, limit=1)
         try:
             song_uri = search_response['tracks']['items'][0]['uri']
@@ -222,11 +227,17 @@ def tunein():
         else:
             print('Playlist has less than 50 songs')
 
+        return 0
+
     tunein_scraper("181FM Old School HipHop", "s126792")
     tunein_scraper("181.FM Super 70s", "s126791")
     tunein_scraper("NME 1", "s159857")
     tunein_scraper("SomaFM: Indie Pop Rocks!", "s2592")
     tunein_scraper("QFM 96", "s30842")
+    tunein_scraper("Double J", "s20270")
+    tunein_scraper("NME 2", "s155539")
+    tunein_scraper("delta radio INDIE", "s96853")
+    tunein_scraper("triple j", "s25508")
 
     return "xxx"
 
