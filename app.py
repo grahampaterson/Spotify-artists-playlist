@@ -175,17 +175,16 @@ def tunein():
             artist_song = dict(response.json())['Header']['Subtitle']
             divider = artist_song.find(" - ")
             if divider == -1:
-                print("No Divider")
+                print("No Divider in '{}' ({})".format(artist_song, playlist_name))
                 return -1
 
             artist_name = artist_song[:divider]
             song_name = artist_song[divider + 3:]
-            artist_name = artist_name.lower()
-            artist_name = artist_name.replace('f/', '') # Removes "f/" featured artists
-            artist_name = artist_name.replace('-', ' ') # Replaces dashes '-' with spaces
-            artist_name = artist_name.replace('&', ' ') # Replaces dashes '&' with spaces
-            artist_name = artist_name.replace('feat.', ' ') # Replaces dashes '&' with spaces
             s_query = "{} {}".format(song_name, artist_name)
+            s_query = s_query.lower()
+            remove_chars = ['f/', '-', '&', 'feat.', 'ft.', '{', '}']
+            for i in remove_chars:
+                s_query = s_query.replace(i, ' ')
             # removes stuff in brackets
             find = re.search('\(.*\)', s_query)
             if find != None:
@@ -193,28 +192,28 @@ def tunein():
                 
             return s_query
 
+        search_q = parse_song(response)
+        # if no divider ends function with error -1
+        if search_q == -1:
+            return -1
+
         # create spotify playlist and get uri & id
         playlist_uri = new_spotify_playlist(PLAYLIST_NAME)
         playlist_id = playlist_uri[(playlist_uri.find('playlist:') + len('playlist:')):]
-
-        # search for song on spotify
-        search_q = parse_song(response)
-        if search_q == -1:
-            return -1
-        search_response = sp.search(search_q, limit=1)
-        try:
-            song_uri = search_response['tracks']['items'][0]['uri']
-            if song_uri != session.get(radio_id):
-                # adding song to playlist
-                sp.user_playlist_add_tracks(user, playlist_id, [song_uri])
+        
+        # checks if search query is the same as previous one
+        if search_q != session.get(radio_id):
+            search_response = sp.search(search_q, limit=1) # search for track on spotify
+            try:
+                song_uri = search_response['tracks']['items'][0]['uri'] # get first search result
+                sp.user_playlist_add_tracks(user, playlist_id, [song_uri]) # add track to playlist
                 print("New song added: {}".format(song_uri))
-                session[radio_id] = song_uri
-            else:
-                print("Same song still playing... Didn't Add")
-        except:
-            log("Couldn't find song: {}".format(search_q))
-            print("Couldn't find song: {}".format(search_q))
-            pass
+                session[radio_id] = search_q
+            except:
+                log("Couldn't find song: {}".format(search_q))
+                print("Couldn't find song: {}".format(search_q))
+        else:
+            print("Same song still playing... Didn't Add")
 
         # Checks if playlist has 50+ songs and if it does, deletes the first song from the playlist
         remove_track = sp.user_playlist_tracks(user, playlist_id=playlist_id, fields='items.track.uri, next', limit=50, offset=0)
@@ -238,6 +237,8 @@ def tunein():
     tunein_scraper("NME 2", "s155539")
     tunein_scraper("delta radio INDIE", "s96853")
     tunein_scraper("triple j", "s25508")
+    tunein_scraper("The Beat", "s35189")
+    tunein_scraper("One Love Hip Hop Radio", "s125403")
 
     return "xxx"
 
