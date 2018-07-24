@@ -239,6 +239,12 @@ def tunein():
     tunein_scraper("triple j", "s25508")
     tunein_scraper("The Beat", "s35189")
     tunein_scraper("One Love Hip Hop Radio", "s125403")
+    tunein_scraper("SomaFM Groove Salad", "s2591")
+    tunein_scraper("Real Punk Radio", "s117580")
+    tunein_scraper("idobi Radio", "s18357")
+    tunein_scraper("Maximum 103.7", "s6763")
+    tunein_scraper("idobi Anthm", "s237005")
+    tunein_scraper("The Rap MIXX", "s190580")
 
     return "xxx"
 
