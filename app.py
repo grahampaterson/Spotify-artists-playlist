@@ -160,6 +160,8 @@ def testing():
 @auth_required
 def tunein():
 
+    PLAYLIST_LENGTH = 85 # Invariant  < 100
+
     # Spotify Creds
     user = session['user_id']
     sp = spotipy.client.Spotify(session['token'], True, CREDS)
@@ -216,15 +218,15 @@ def tunein():
             print("Same song still playing... Didn't Add")
 
         # Checks if playlist has 50+ songs and if it does, deletes the first song from the playlist
-        remove_track = sp.user_playlist_tracks(user, playlist_id=playlist_id, fields='items.track.uri, next', limit=50, offset=0)
+        remove_track = sp.user_playlist_tracks(user, playlist_id=playlist_id, fields='items.track.uri, next', limit=PLAYLIST_LENGTH, offset=0)
         if remove_track['next'] != None:
             try:
                 sp.user_playlist_remove_specific_occurrences_of_tracks(user, playlist_id, [{'uri':remove_track['items'][0]['track']['uri'], 'positions':[0]}])
             except:
                 pass
-            print('Playlist has more than 50 songs, removing oldest song')
+            print('Playlist has more than {} songs, removing oldest song'.format(PLAYLIST_LENGTH))
         else:
-            print('Playlist has less than 50 songs')
+            print('Playlist has less than {} songs'.format(PLAYLIST_LENGTH))
 
         return 0
 
